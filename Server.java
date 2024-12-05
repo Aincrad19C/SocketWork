@@ -6,7 +6,7 @@ public class Server {
    public static void main(String[] args) {
       try {
          ServerSocket ss = new ServerSocket(8080);
-         System.out.println("Server is listening on port 8080...");
+         System.out.println("HTTP Server is listening on port 8080...");
 
          while (true) {
             Socket s = ss.accept();
@@ -37,23 +37,22 @@ class ClientHandler implements Runnable {
          BufferedReader br = new BufferedReader(new InputStreamReader(is));
          BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(os));
 
-         // 使用循环来持续读取客户端发送的消息
-         String message;
-         while ((message = br.readLine()) != null) {
-            System.out.println("Client: " + message);
-            // process
-            
+         // 读取HTTP请求的第一行
+         String requestLine = br.readLine();
+         if (requestLine == null) {
+            return;
+         }
 
+         // 解析请求方法和路径
+         String[] requestParts = requestLine.split(" ");
+         String method = requestParts[0];
+         String path = requestParts[1];
 
-
-
-
-
-
-
-            // 处理：将接收到的消息原样发送回客户端
-            bw.write(message + " received\n");
-            bw.flush();
+         // 根据请求方法处理请求
+         if ("GET".equalsIgnoreCase(method)) {
+            handleGet(path, bw);
+         } else if ("POST".equalsIgnoreCase(method)) {
+            handlePost(br, bw);
          }
 
          // 客户端断开连接时，关闭资源
@@ -62,5 +61,30 @@ class ClientHandler implements Runnable {
       } catch (IOException e) {
          e.printStackTrace();
       }
+   }
+
+   private void handleGet(String path, BufferedWriter bw) throws IOException {
+      // 这里只是一个示例，实际中你可能需要根据路径返回不同的响应
+      bw.write("HTTP/1.1 200 OK\r\n");
+      bw.write("Content-Type: text/plain\r\n");
+      bw.write("\r\n");
+      bw.write("GET request for " + path);
+      bw.flush();
+   }
+
+   private void handlePost(BufferedReader br, BufferedWriter bw) throws IOException {
+      // 读取POST请求的正文
+      StringBuilder body = new StringBuilder();
+      String line;
+      while ((line = br.readLine()) != null && !line.isEmpty()) {
+         body.append(line).append("\n");
+      }
+
+      // 发送响应
+      bw.write("HTTP/1.1 200 OK\r\n");
+      bw.write("Content-Type: text/plain\r\n");
+      bw.write("\r\n");
+      bw.write("POST request with body: " + body.toString());
+      bw.flush();
    }
 }
